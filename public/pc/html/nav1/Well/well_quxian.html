@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="UTF-8">
+		<title>历史曲线</title>
+		<meta name="renderer" content="webkit">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width,user-scalable=yes, minimum-scale=0.4, initial-scale=0.8,target-densitydpi=low-dpi" />
+		<link rel="shortcut icon" href="../../../favicon.ico" type="image/x-icon" />
+		<link rel="stylesheet" href="../../../css/font.css">
+		<link rel="stylesheet" href="../../../css/xadmin.css">
+		<link rel="stylesheet" type="text/css" href="../../../lib/layui/css/layui.css" />
+		<style type="text/css">
+			body {
+				height: 100%;
+			}
+			
+			.layui-tab {
+				margin: 0;
+			}
+			
+			.layui-nav {
+				background-color: #262626;
+			}
+			
+			.layui-nav .layui-this:after,
+			.layui-nav-bar,
+			.layui-nav-tree .layui-nav-itemed:after {
+				background-color: initial
+			}
+			
+			.layui-nav .layui-nav-item a {
+				padding: 0;
+				font-size: 14px;
+			}
+			
+			.layui-nav-item span {
+				padding: 0 20px;
+			}
+			
+			.content {
+				width: 100%;
+				height: 89%;
+			}
+			
+			.layui-card-header img {
+				padding-left: 12px;
+				width: 22px;
+				height: 22px;
+			}
+			
+			.layui-card-body {
+				height: 80px;
+			}
+			
+			.layui-card-body img {
+				width: 22px;
+				height: 22px;
+				float: left;
+			}
+			
+			.content-til {
+				float: left;
+				margin-left: 12px;
+			}
+			
+			.content-til li {
+				color: #999;
+			}
+			
+			.content-til li:first-child {
+				color: #333;
+			}
+			
+			.content-til span {
+				color: #F9CC74;
+			}
+			
+			.layui-card-body-k {
+				float: left;
+				margin-right: 80px;
+			}
+			
+			.layui-card-top {
+				width: 100%;
+				padding: 10px 15px;
+				line-height: 40px;
+			}
+			
+			.layui-card-top img {
+				margin-right: 15px;
+				width: 16px;
+				height: 16px;
+			}
+			
+			.layui-inline {
+				float: right;
+				margin-right: 30px;
+				position: relative;
+				width: 350px;
+			}
+			
+			.layui-inline img {
+				position: absolute;
+				right: 4px;
+				top: 12px;
+				width: 14px;
+				height: 14px;
+			}
+			
+			.layui-inline input {
+				background-color: #f5f5f5;
+			}
+			
+			i {
+				font-style: initial;
+			}
+		</style>
+	</head>
+
+	<body>
+		<!--导航-->
+		<ul class="layui-nav" lay-filter="">
+			<li class="layui-nav-item">
+				<a href="../Projectsmap.html">项目首页<span>>></span></a>
+			</li>
+			<li class="layui-nav-item">
+				<a href="welllist.html"><i class="headerzd">井盖列表</i><span>>></span></a>
+			</li>
+			<li class="layui-nav-item layui-this">
+				<a href="">历史曲线</a>
+			</li>
+		</ul>
+		<!--内容-->
+		<div class="layui-card">
+			<div class="layui-card-top"><img src="../../../images/icon_lsqxdb.svg" /><i class="navtd">井盖曲线</i>
+				<!--<div class="layui-inline">
+						<img src="../../../images/icon_dx.svg" />
+						<input type="text" class="layui-input" id="test10" placeholder="日期时间选择范围">
+					</div>-->
+			</div>
+			<!--图标-->
+			<div class="x-body-a" style="width:100%;height:500px;">
+				<div id="mainA" style="width: 100%;height:100%;"></div>
+			</div>
+		</div>
+		</div>
+	</body>
+	<script src="../../../js/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="../../../lib/layui/layui.js" type="text/javascript" charset="utf-8"></script>
+	<script src="../../../js/xadmin.js" type="text/javascript" charset="utf-8"></script>
+	<script src="../../../js/home/echarts.min.js" charset="utf-8"></script>
+	<script src="../../../js/vue.js" type="text/javascript" charset="utf-8"></script>
+	<script src="../../../js/store.js" type="text/javascript" charset="utf-8"></script>
+	<script src="../../../js/http.js" type="text/javascript" charset="utf-8"></script>
+	<script type="text/javascript">
+		//项目曲线id
+		var wellname_id = store.get('wellname_id');
+		var b_name; //名称
+		//默认时间
+		var time = '';
+		//时间选择
+		layui.use('laydate', function() {
+			var laydate = layui.laydate;
+			//执行一个laydate实例
+			laydate.render({
+				elem: '#test10',
+				type: 'datetime',
+				range: true,
+				done: function(value, date) { //监听日期被切换
+					console.log(value);
+					time = value;
+					quxian(b_name);
+				}
+			});
+		});
+		//console.log(wellname_id);
+		//内容
+		$.ajax({
+			type: "GET",
+			url: _http + "/admin/system_overview/ensorLog",
+			dataType: 'json',
+			data: {
+				sensor_id: wellname_id
+			},
+			success: function(data) {
+				console.log(data);
+				var listwell = new Object;
+				var listdata = [];
+				var listtime = [];
+				var listname =data.data[0].name;
+				for(var i = 0; i < data.data.length; i++) {
+					listdata.push(data.data[i].data);
+					listtime.push(timestampToTime(data.data[i].time));
+				};
+				listwell.data = listdata;
+				listwell.time = listtime;
+				listwell.name = listname;
+				quxian(listwell);
+			}
+		});
+
+		//时间戳转换
+		function timestampToTime(timestamp) {
+			return new Date(parseInt(timestamp) * 1000).toLocaleString().replace(/:\d{1,2}$/,' ');     
+		}
+		//曲线统计
+		function quxian(data) {
+			console.log(data)
+			//统计图A
+			// 基于准备好的dom，初始化echarts实例
+			var myChart = echarts.init(document.getElementById('mainA'));
+			// 指定图表的配置项和数据		
+			option = {
+				tooltip: {
+					trigger: 'axis'
+				},
+				grid: {
+					left: '3%',
+					right: '4%',
+					bottom: '3%',
+					containLabel: true
+				},
+				xAxis: {
+					type: 'category',
+					boundaryGap: false,
+					data: data.time,
+				},
+				yAxis: {
+					type: 'value',
+					position: 'right',
+					axisLabel: {
+						formatter: '{value}'
+					}
+				},
+				series: [{
+					name:data.name,
+					type: 'line',
+					stack: '总量',
+					smooth: true,
+					data: data.data,
+					itemStyle: {
+						normal: {
+							color: '#F9CC74'
+						}
+					},
+					areaStyle: {
+						normal: {
+							color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+								offset: 0,
+								color: '#F9CC74 '
+							}, {
+								offset: 1,
+								color: '#FEFEFD'
+							}])
+						}
+					}
+				}]
+			};
+			// 使用刚指定的配置项和数据显示图表。
+			myChart.setOption(option);
+		}
+	</script>
+
+</html>
